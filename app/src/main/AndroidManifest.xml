@@ -26,6 +26,11 @@
         </activity>
 
         <activity
+            android:name=".SetupActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <activity
             android:name=".TextInputActivity"
             android:exported="false"
             android:launchMode="singleTop"

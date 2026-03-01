@@ -21,56 +21,42 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 첫 실행이면 SetupActivity로
+        if (!Prefs.isConfigured(this)) {
+            startActivity(Intent(this, SetupActivity::class.java))
+            finish()
+            return
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Load saved values (masked)
-        val token = Prefs.getToken(this)
-        val channel = Prefs.getChannel(this)
-        if (token.isNotBlank()) binding.etToken.setText(token)
-        if (channel.isNotBlank()) binding.etChannel.setText(channel)
-        updateStatus()
-
-        binding.btnSave.setOnClickListener {
-            val newToken = binding.etToken.text.toString().trim()
-            val newChannel = binding.etChannel.text.toString().trim()
-
-            if (newToken.isBlank() || newChannel.isBlank()) {
-                Toast.makeText(this, "토큰과 채널 ID를 모두 입력해주세요", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            Prefs.save(this, newToken, newChannel)
-            Toast.makeText(this, "저장됐어!", Toast.LENGTH_SHORT).show()
-            updateStatus()
-            startService()
-        }
-
-        binding.btnStartStop.setOnClickListener {
-            if (Prefs.isConfigured(this)) {
-                startService()
-            } else {
-                Toast.makeText(this, "먼저 설정을 저장해주세요", Toast.LENGTH_SHORT).show()
-            }
-        }
-
         requestPermissionsIfNeeded()
-    }
+        startBotService()
 
-    private fun startService() {
-        val intent = Intent(this, BotService::class.java)
-        ContextCompat.startForegroundService(this, intent)
-        Toast.makeText(this, "훈희봇 실행 중! 알림바를 확인해봐", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun updateStatus() {
-        if (Prefs.isConfigured(this)) {
-            binding.tvStatus.text = "✅ 연결 설정 완료"
-            binding.btnStartStop.text = "서비스 시작"
-        } else {
-            binding.tvStatus.text = "⚠️ 설정이 필요해요"
-            binding.btnStartStop.text = "설정 후 시작"
+        // 메뉴 버튼들
+        binding.btnVoice.setOnClickListener {
+            val i = Intent(this, BotService::class.java).apply { action = BotService.ACTION_VOICE }
+            ContextCompat.startForegroundService(this, i)
+            Toast.makeText(this, "🎤 말해봐!", Toast.LENGTH_SHORT).show()
         }
+
+        binding.btnSettings.setOnClickListener {
+            startActivity(Intent(this, SetupActivity::class.java))
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // SetupActivity에서 돌아왔을 때 재초기화
+        if (Prefs.isConfigured(this) && ::binding.isInitialized) {
+            startBotService()
+        }
+    }
+
+    private fun startBotService() {
+        ContextCompat.startForegroundService(this, Intent(this, BotService::class.java))
     }
 
     private fun requestPermissionsIfNeeded() {

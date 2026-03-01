@@ -1,105 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0D0D1A">
+    android:orientation="vertical"
+    android:background="#0D0D1A"
+    android:padding="24dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_gravity="center"
+        android:layout_marginTop="32dp"
+        android:text="🔮"
+        android:textSize="52sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="24dp"
-            android:text="🔮"
-            android:textSize="48sp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="훈희봇"
+        android:textColor="#C084FC"
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="32dp"
-            android:text="훈희봇"
-            android:textColor="#C084FC"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="40dp"
+        android:text="알림바에서 바로 슬랙으로 🎤"
+        android:textColor="#64748B"
+        android:textSize="13sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Slack Bot Token"
-            android:textColor="#94A3B8"
-            android:textSize="13sp"
-            android:layout_marginBottom="6dp" />
+    <!-- 음성 바로 전송 -->
+    <Button
+        android:id="@+id/btnVoice"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:background="@drawable/btn_primary_bg"
+        android:text="🎤 지금 바로 음성 전송"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
 
-        <EditText
-            android:id="@+id/etToken"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/input_bg"
-            android:hint="xoxb-..."
-            android:inputType="textPassword"
-            android:padding="14dp"
-            android:textColor="#E2E8F0"
-            android:textColorHint="#475569"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp" />
+    <!-- TODO: 추후 메뉴들 추가할 자리 -->
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Slack Channel ID"
-            android:textColor="#94A3B8"
-            android:textSize="13sp"
-            android:layout_marginBottom="6dp" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1E1E2E"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp" />
 
-        <EditText
-            android:id="@+id/etChannel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/input_bg"
-            android:hint="C0XXXXXXXXX"
-            android:inputType="text"
-            android:padding="14dp"
-            android:textColor="#E2E8F0"
-            android:textColorHint="#475569"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp" />
+    <!-- 설정 -->
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/btn_secondary_bg"
+        android:text="⚙️ 설정 변경"
+        android:textColor="#64748B"
+        android:textSize="14sp" />
 
-        <Button
-            android:id="@+id/btnSave"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@drawable/btn_primary_bg"
-            android:text="저장하기"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
-
-        <Button
-            android:id="@+id/btnStartStop"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="@drawable/btn_secondary_bg"
-            android:text="서비스 시작"
-            android:textColor="#C084FC"
-            android:textSize="16sp"
-            android:layout_marginBottom="24dp" />
-
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="⚠️ 설정이 필요해요"
-            android:textColor="#64748B"
-            android:textSize="14sp" />
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>
