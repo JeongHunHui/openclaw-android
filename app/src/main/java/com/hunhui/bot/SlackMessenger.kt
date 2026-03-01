@@ -50,10 +50,13 @@ object SlackMessenger {
         }
 
         try {
-            val body = FormBody.Builder()
+            val isUserToken = token.startsWith("xoxp-")
+            val bodyBuilder = FormBody.Builder()
                 .add("channel", channel)
                 .add("text", text)
-                .build()
+            // 유저 토큰이면 as_user=true → 내가 직접 친 것처럼 보임
+            if (isUserToken) bodyBuilder.add("as_user", "true")
+            val body = bodyBuilder.build()
 
             val request = Request.Builder()
                 .url("https://slack.com/api/chat.postMessage")
