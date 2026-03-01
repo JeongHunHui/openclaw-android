@@ -8,40 +8,67 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 object SlackMessenger {
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
 
+    /** 토큰 유효성 검사 (auth.test) */
+    suspend fun validateToken(token: String): Result<String> = withContext(Dispatchers.IO) {
+        if (token.isBlank()) return@withContext Result.failure(IllegalArgumentException("토큰이 비어있어"))
+        try {
+            val request = Request.Builder()
+                .url("https://slack.com/api/auth.test")
+                .header("Authorization", "Bearer $token")
+                .post(FormBody.Builder().build())
+                .build()
+            val body = client.newCall(request).execute().body?.string() ?: ""
+            val json = JSONObject(body)
+            if (json.optBoolean("ok", false)) {
+                val userName = json.optString("user", "unknown")
+                Result.success(userName)
+            } else {
+                val err = json.optString("error", "unknown_error")
+                Result.failure(IOException("Slack 오류: $err"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** 메시지 전송 */
     suspend fun sendMessage(context: Context, text: String): Result<Unit> = withContext(Dispatchers.IO) {
         // 유저 토큰 우선, 없으면 봇 토큰
         val token = Prefs.getUserToken(context).ifBlank { Prefs.getBotToken(context) }
         val channel = Prefs.getChannel(context)
 
         if (token.isBlank() || channel.isBlank()) {
-            return@withContext Result.failure(IllegalStateException("Slack not configured"))
+            return@withContext Result.failure(IllegalStateException("Slack 설정이 없어"))
         }
 
-        val body = FormBody.Builder()
-            .add("channel", channel)
-            .add("text", text)
-            .build()
-
-        val request = Request.Builder()
-            .url("https://slack.com/api/chat.postMessage")
-            .header("Authorization", "Bearer $token")
-            .post(body)
-            .build()
-
         try {
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
+            val body = FormBody.Builder()
+                .add("channel", channel)
+                .add("text", text)
+                .build()
+
+            val request = Request.Builder()
+                .url("https://slack.com/api/chat.postMessage")
+                .header("Authorization", "Bearer $token")
+                .post(body)
+                .build()
+
+            val responseBody = client.newCall(request).execute().body?.string() ?: ""
             val json = JSONObject(responseBody)
 
             if (json.optBoolean("ok", false)) {
                 Result.success(Unit)
             } else {
-                val error = json.optString("error", "unknown error")
-                Result.failure(IOException("Slack API error: $error"))
+                val err = json.optString("error", "unknown_error")
+                Result.failure(IOException("Slack 오류: $err"))
             }
         } catch (e: Exception) {
             Result.failure(e)

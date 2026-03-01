@@ -22,9 +22,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 첫 실행이면 SetupActivity로
+        // 설정 안 됐으면 SetupActivity로
         if (!Prefs.isConfigured(this)) {
-            startActivity(Intent(this, SetupActivity::class.java))
+            startActivity(Intent(this, SetupActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
             finish()
             return
         }
@@ -35,7 +37,6 @@ class MainActivity : AppCompatActivity() {
         requestPermissionsIfNeeded()
         startBotService()
 
-        // 메뉴 버튼들
         binding.btnVoice.setOnClickListener {
             val i = Intent(this, BotService::class.java).apply { action = BotService.ACTION_VOICE }
             ContextCompat.startForegroundService(this, i)
@@ -44,14 +45,6 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnSettings.setOnClickListener {
             startActivity(Intent(this, SetupActivity::class.java))
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // SetupActivity에서 돌아왔을 때 재초기화
-        if (Prefs.isConfigured(this) && ::binding.isInitialized) {
-            startBotService()
         }
     }
 

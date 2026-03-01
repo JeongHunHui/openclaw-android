@@ -20,8 +20,8 @@ android {
             minifyEnabled false
         }
         debug {
-            applicationIdSuffix ".debug"
             debuggable true
+            // applicationIdSuffix 제거 - 재설치 충돌 방지
         }
     }
 
