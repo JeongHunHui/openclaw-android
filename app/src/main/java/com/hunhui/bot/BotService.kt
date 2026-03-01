@@ -72,37 +72,16 @@ class BotService : Service() {
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = matches?.firstOrNull()
+                isListening = false
+                broadcastVoiceState("idle")
                 if (!text.isNullOrBlank()) {
-                    // Send partial result and keep listening
                     sendToSlack(text)
-                    updateNotification("🎤 계속 듣는 중...")
-                    // Restart listening for continuous mode
-                    if (isListening) {
-                        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                            kotlinx.coroutines.delay(300)
-                            if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
-                        }
-                    }
                 } else {
-                    // Silence / no match — restart if still in continuous mode
-                    if (isListening) {
-                        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                            kotlinx.coroutines.delay(200)
-                            if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
-                        }
-                    }
+                    updateNotification("대기 중...")
                 }
             }
 
             override fun onError(error: Int) {
-                val retriable = error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
-                if (retriable && isListening) {
-                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                        kotlinx.coroutines.delay(200)
-                        if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
-                    }
-                    return
-                }
                 isListening = false
                 broadcastVoiceState("idle")
                 val msg = when (error) {
