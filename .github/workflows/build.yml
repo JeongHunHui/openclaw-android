@@ -66,6 +66,7 @@ jobs:
           retention-days: 90
 
       - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION_NAME }}
@@ -75,3 +76,16 @@ jobs:
           body: |
             ## 훈희봇 v${{ env.VERSION_NAME }}
             자동 빌드 APK 🔮
+
+      - name: Notify Slack with APK link
+        if: success()
+        run: |
+          APK_URL="https://github.com/JeongHunHUI/openclaw-android/releases/download/v${{ env.VERSION_NAME }}/hunhui-bot-${{ env.VERSION_NAME }}.apk"
+          RELEASE_URL="https://github.com/JeongHunHUI/openclaw-android/releases/tag/v${{ env.VERSION_NAME }}"
+          curl -s -X POST "https://slack.com/api/chat.postMessage" \
+            -H "Authorization: Bearer ${{ secrets.SLACK_BOT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"channel\": \"C0AJLQUM2KA\",
+              \"text\": \"<@U0AHSGR66SE> 훈희봇 v${{ env.VERSION_NAME }} 빌드 완료! APK 다운로드: ${APK_URL}\n릴리즈 페이지: ${RELEASE_URL}\"
+            }"
