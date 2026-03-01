@@ -21,6 +21,9 @@ class BotService : Service() {
         const val CHANNEL_ID = "hunhui_bot_channel"
         const val NOTIFICATION_ID = 1001
         const val ACTION_VOICE = "com.hunhui.bot.ACTION_VOICE"
+        const val ACTION_STOP_VOICE = "com.hunhui.bot.ACTION_STOP_VOICE"
+        const val ACTION_VOICE_STATE_CHANGED = "com.hunhui.bot.ACTION_VOICE_STATE_CHANGED"
+        const val EXTRA_VOICE_STATE = "extra_voice_state"
         const val ACTION_TEXT_INPUT = "com.hunhui.bot.ACTION_TEXT_INPUT"
         const val ACTION_SEND_TEXT = "com.hunhui.bot.ACTION_SEND_TEXT"
         const val EXTRA_TEXT = "extra_text"
@@ -42,6 +45,7 @@ class BotService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_VOICE -> startVoiceInput()
+            ACTION_STOP_VOICE -> stopVoiceInput()
             ACTION_TEXT_INPUT -> openTextInput()
             ACTION_SEND_TEXT -> {
                 val text = intent.getStringExtra(EXTRA_TEXT) ?: return START_STICKY
@@ -69,6 +73,7 @@ class BotService : Service() {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = matches?.firstOrNull()
                 isListening = false
+                broadcastVoiceState("idle")
                 if (!text.isNullOrBlank()) {
                     sendToSlack(text)
                 } else {
@@ -78,6 +83,7 @@ class BotService : Service() {
 
             override fun onError(error: Int) {
                 isListening = false
+                broadcastVoiceState("idle")
                 val msg = when (error) {
                     SpeechRecognizer.ERROR_AUDIO -> "오디오 오류"
                     SpeechRecognizer.ERROR_NO_MATCH -> "인식 실패"
@@ -99,6 +105,22 @@ class BotService : Service() {
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
         }
         speechRecognizer?.startListening(recognizerIntent)
+        broadcastVoiceState("listening")
+    }
+
+    private fun stopVoiceInput() {
+        if (!isListening) return
+        speechRecognizer?.stopListening()
+        isListening = false
+        updateNotification("대기 중...")
+        broadcastVoiceState("idle")
+    }
+
+    private fun broadcastVoiceState(state: String) {
+        sendBroadcast(Intent(ACTION_VOICE_STATE_CHANGED).apply {
+            putExtra(EXTRA_VOICE_STATE, state)
+            setPackage(packageName)
+        })
     }
 
     private fun openTextInput() {
