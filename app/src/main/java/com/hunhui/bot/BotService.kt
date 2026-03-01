@@ -72,16 +72,37 @@ class BotService : Service() {
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = matches?.firstOrNull()
-                isListening = false
-                broadcastVoiceState("idle")
                 if (!text.isNullOrBlank()) {
+                    // Send partial result and keep listening
                     sendToSlack(text)
+                    updateNotification("🎤 계속 듣는 중...")
+                    // Restart listening for continuous mode
+                    if (isListening) {
+                        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                            kotlinx.coroutines.delay(300)
+                            if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
+                        }
+                    }
                 } else {
-                    updateNotification("대기 중...")
+                    // Silence / no match — restart if still in continuous mode
+                    if (isListening) {
+                        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                            kotlinx.coroutines.delay(200)
+                            if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
+                        }
+                    }
                 }
             }
 
             override fun onError(error: Int) {
+                val retriable = error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                if (retriable && isListening) {
+                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                        kotlinx.coroutines.delay(200)
+                        if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
+                    }
+                    return
+                }
                 isListening = false
                 broadcastVoiceState("idle")
                 val msg = when (error) {
@@ -98,14 +119,18 @@ class BotService : Service() {
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
-        val recognizerIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
-        }
-        speechRecognizer?.startListening(recognizerIntent)
+        speechRecognizer?.startListening(buildRecognizerIntent())
         broadcastVoiceState("listening")
+    }
+
+    private fun buildRecognizerIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ko-KR")
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1000L)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 500L)
     }
 
     private fun stopVoiceInput() {
