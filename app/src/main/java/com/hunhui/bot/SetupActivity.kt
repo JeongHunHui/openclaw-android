@@ -16,15 +16,16 @@ class SetupActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnNext.setOnClickListener {
-            val token = binding.etToken.text.toString().trim()
+            val botToken = binding.etBotToken.text.toString().trim()
+            val userToken = binding.etUserToken.text.toString().trim()
             val channel = binding.etChannel.text.toString().trim()
 
-            if (token.isBlank() || channel.isBlank()) {
-                Toast.makeText(this, "토큰과 채널 ID를 모두 입력해줘", Toast.LENGTH_SHORT).show()
+            if (botToken.isBlank() || channel.isBlank()) {
+                Toast.makeText(this, "Bot Token과 Channel ID는 필수야", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            Prefs.save(this, token, channel)
+            Prefs.save(this, botToken, userToken, channel)
             startActivity(Intent(this, MainActivity::class.java))
             finish()
         }

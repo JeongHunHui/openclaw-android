@@ -41,18 +41,40 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Slack Bot Token"
+            android:text="Slack Bot Token (필수)"
             android:textColor="#94A3B8"
             android:textSize="13sp"
             android:textStyle="bold"
             android:layout_marginBottom="6dp" />
 
         <EditText
-            android:id="@+id/etToken"
+            android:id="@+id/etBotToken"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/input_bg"
             android:hint="xoxb-..."
+            android:inputType="textPassword"
+            android:padding="14dp"
+            android:textColor="#E2E8F0"
+            android:textColorHint="#475569"
+            android:textSize="14sp"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Slack User Token (선택 — 내 이름으로 전송)"
+            android:textColor="#94A3B8"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <EditText
+            android:id="@+id/etUserToken"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/input_bg"
+            android:hint="xoxp-... (없으면 비워둬)"
             android:inputType="textPassword"
             android:padding="14dp"
             android:textColor="#E2E8F0"

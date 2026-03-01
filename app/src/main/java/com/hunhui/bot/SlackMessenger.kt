@@ -13,7 +13,8 @@ object SlackMessenger {
     private val client = OkHttpClient()
 
     suspend fun sendMessage(context: Context, text: String): Result<Unit> = withContext(Dispatchers.IO) {
-        val token = Prefs.getToken(context)
+        // 유저 토큰 우선, 없으면 봇 토큰
+        val token = Prefs.getUserToken(context).ifBlank { Prefs.getBotToken(context) }
         val channel = Prefs.getChannel(context)
 
         if (token.isBlank() || channel.isBlank()) {
