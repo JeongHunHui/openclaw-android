@@ -9,6 +9,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.RemoteInput
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,7 @@ class BotService : Service() {
         const val ACTION_TEXT_INPUT = "com.hunhui.bot.ACTION_TEXT_INPUT"
         const val ACTION_SEND_TEXT = "com.hunhui.bot.ACTION_SEND_TEXT"
         const val EXTRA_TEXT = "extra_text"
+        const val KEY_TEXT_REPLY = "key_text_reply"
         private const val TAG = "BotService"
     }
 
@@ -137,11 +139,22 @@ class BotService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val textIntent = PendingIntent.getService(
+        // RemoteInput: 알림에서 바로 텍스트 입력
+        val remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
+            .setLabel("메시지 입력...")
+            .build()
+
+        val replyIntent = PendingIntent.getBroadcast(
             this, 2,
-            Intent(this, BotService::class.java).apply { action = ACTION_TEXT_INPUT },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            Intent(this, NotificationActionReceiver::class.java).apply {
+                action = ACTION_SEND_TEXT
+            },
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+
+        val replyAction = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_menu_edit, "✏️ 텍스트", replyIntent
+        ).addRemoteInput(remoteInput).build()
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("훈희봇")
@@ -151,7 +164,7 @@ class BotService : Service() {
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .addAction(android.R.drawable.ic_btn_speak_now, "🎤 음성", voiceIntent)
-            .addAction(android.R.drawable.ic_menu_edit, "✏️ 텍스트", textIntent)
+            .addAction(replyAction)
             .build()
     }
 
