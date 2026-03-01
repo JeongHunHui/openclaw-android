@@ -18,13 +18,11 @@ jobs:
           fetch-depth: 0
 
       - name: Set version
-        id: version
         run: |
           VERSION_CODE=$(git rev-list --count HEAD)
           VERSION_NAME="1.${VERSION_CODE}"
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "🏷️ Version: $VERSION_NAME (code: $VERSION_CODE)"
 
       - name: Set up JDK 17
@@ -36,29 +34,24 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create keystore (consistent signing)
+      - name: Restore keystore from secret
         run: |
-          keytool -genkey -v \
-            -keystore app/hunhui-bot.jks \
-            -alias hunhui \
-            -keyalg RSA -keysize 2048 -validity 36500 \
-            -dname "CN=HunhuiBot,O=Hunhui,C=KR" \
-            -storepass hunhuibot2024 -keypass hunhuibot2024 \
-            -noprompt
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/hunhui-bot.jks
+          echo "Keystore restored: $(wc -c < app/hunhui-bot.jks) bytes"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK (signed)
+      - name: Build Release APK
         env:
           BUILD_NUMBER: ${{ env.VERSION_CODE }}
           VERSION_NAME: ${{ env.VERSION_NAME }}
         run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/app/hunhui-bot.jks \
-            -Pandroid.injected.signing.store.password=hunhuibot2024 \
-            -Pandroid.injected.signing.key.alias=hunhui \
-            -Pandroid.injected.signing.key.password=hunhuibot2024
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_STORE_PASS }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEYSTORE_KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEYSTORE_KEY_PASS }}
 
       - name: Rename APK
         run: |
@@ -81,10 +74,4 @@ jobs:
           generate_release_notes: true
           body: |
             ## 훈희봇 v${{ env.VERSION_NAME }}
-            
-            자동 빌드 APK — 다운받아서 설치해봐! 🔮
-            
-            **설치 방법:**
-            1. APK 파일 다운로드
-            2. 갤럭시 설정 → 보안 → 출처를 알 수 없는 앱 허용
-            3. 설치 후 실행 → Bot Token + User Token + Channel ID 입력
+            자동 빌드 APK 🔮
