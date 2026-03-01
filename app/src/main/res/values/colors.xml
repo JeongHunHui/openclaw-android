@@ -5,4 +5,5 @@
     <color name="purple_700">#7E22CE</color>
     <color name="dark_bg">#0D0D1A</color>
     <color name="card_bg">#13131F</color>
+    <color name="ic_launcher_background">#0D0D1A</color>
 </resources>
