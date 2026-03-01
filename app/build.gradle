@@ -11,8 +11,10 @@ android {
         applicationId "com.hunhui.bot"
         minSdk 26
         targetSdk 34
-        versionCode (System.getenv("BUILD_NUMBER")?.toIntOrNull() ?: 1)
-        versionName (System.getenv("VERSION_NAME") ?: "1.0.0")
+        def buildNum = System.getenv("BUILD_NUMBER")
+        def verName = System.getenv("VERSION_NAME")
+        versionCode buildNum ? buildNum.toInteger() : 1
+        versionName verName ?: "1.0.0"
     }
 
     buildTypes {
