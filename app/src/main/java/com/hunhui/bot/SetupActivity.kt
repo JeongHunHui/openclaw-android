@@ -7,7 +7,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.hunhui.bot.databinding.ActivitySetupBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SetupActivity : AppCompatActivity() {
 
@@ -34,31 +36,29 @@ class SetupActivity : AppCompatActivity() {
             }
 
             setLoading(true)
-            val ctx = applicationContext  // Activity 참조 안전하게 분리
 
-            lifecycleScope.launch {
-                try {
-                    val tokenToTest = userToken.ifBlank { botToken }
-                    val result = SlackMessenger.validateToken(tokenToTest)
-
-                    if (isFinishing || isDestroyed) return@launch
-
-                    if (result.isSuccess) {
-                        Prefs.save(ctx, botToken, userToken, channel)
-                        val intent = Intent(ctx, MainActivity::class.java).apply {
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                        }
-                        startActivity(intent)
-                    } else {
-                        setLoading(false)
-                        val err = result.exceptionOrNull()?.message ?: "알 수 없는 오류"
-                        Toast.makeText(ctx, "❌ $err", Toast.LENGTH_LONG).show()
+            lifecycleScope.launch(Dispatchers.Main) {
+                val tokenToTest = userToken.ifBlank { botToken }
+                val (success, errMsg) = withContext(Dispatchers.IO) {
+                    try {
+                        val r = SlackMessenger.validateToken(tokenToTest)
+                        Pair(r.isSuccess, r.exceptionOrNull()?.message ?: "알 수 없는 오류")
+                    } catch (e: Exception) {
+                        Pair(false, e.message ?: "예외 발생")
                     }
-                } catch (e: Exception) {
-                    if (!isFinishing && !isDestroyed) {
-                        setLoading(false)
-                        Toast.makeText(ctx, "❌ 오류: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+
+                if (isFinishing || isDestroyed) return@launch
+
+                if (success) {
+                    Prefs.save(this@SetupActivity, botToken, userToken, channel)
+                    val intent = Intent(this@SetupActivity, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
+                    startActivity(intent)
+                } else {
+                    setLoading(false)
+                    Toast.makeText(this@SetupActivity, "❌ $errMsg", Toast.LENGTH_LONG).show()
                 }
             }
         }
