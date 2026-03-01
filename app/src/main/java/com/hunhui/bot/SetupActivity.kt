@@ -19,12 +19,9 @@ class SetupActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         // 기존 저장값 로드
-        val savedBot = Prefs.getBotToken(this)
-        val savedUser = Prefs.getUserToken(this)
-        val savedChannel = Prefs.getChannel(this)
-        if (savedBot.isNotBlank()) binding.etBotToken.setText(savedBot)
-        if (savedUser.isNotBlank()) binding.etUserToken.setText(savedUser)
-        if (savedChannel.isNotBlank()) binding.etChannel.setText(savedChannel)
+        binding.etBotToken.setText(Prefs.getBotToken(this))
+        binding.etUserToken.setText(Prefs.getUserToken(this))
+        binding.etChannel.setText(Prefs.getChannel(this))
 
         binding.btnNext.setOnClickListener {
             val botToken = binding.etBotToken.text.toString().trim()
@@ -36,29 +33,39 @@ class SetupActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // 토큰 검증 후 저장
             setLoading(true)
-            lifecycleScope.launch {
-                val tokenToTest = userToken.ifBlank { botToken }
-                val result = SlackMessenger.validateToken(tokenToTest)
+            val ctx = applicationContext  // Activity 참조 안전하게 분리
 
-                if (result.isSuccess) {
-                    Prefs.save(this@SetupActivity, botToken, userToken, channel)
-                    Toast.makeText(this@SetupActivity, "✅ 연결됐어!", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this@SetupActivity, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            lifecycleScope.launch {
+                try {
+                    val tokenToTest = userToken.ifBlank { botToken }
+                    val result = SlackMessenger.validateToken(tokenToTest)
+
+                    if (isFinishing || isDestroyed) return@launch
+
+                    if (result.isSuccess) {
+                        Prefs.save(ctx, botToken, userToken, channel)
+                        val intent = Intent(ctx, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                    } else {
+                        setLoading(false)
+                        val err = result.exceptionOrNull()?.message ?: "알 수 없는 오류"
+                        Toast.makeText(ctx, "❌ $err", Toast.LENGTH_LONG).show()
                     }
-                    startActivity(intent)
-                } else {
-                    setLoading(false)
-                    val err = result.exceptionOrNull()?.message ?: "알 수 없는 오류"
-                    Toast.makeText(this@SetupActivity, "❌ $err", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    if (!isFinishing && !isDestroyed) {
+                        setLoading(false)
+                        Toast.makeText(ctx, "❌ 오류: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         }
     }
 
     private fun setLoading(loading: Boolean) {
+        if (isFinishing || isDestroyed) return
         binding.btnNext.isEnabled = !loading
         binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
         binding.btnNext.text = if (loading) "확인 중..." else "저장하고 시작하기 🚀"

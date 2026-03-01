@@ -20,10 +20,10 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.debug  // CI에서 -P 플래그로 덮어씀
         }
         debug {
             debuggable true
-            // applicationIdSuffix 제거 - 재설치 충돌 방지
         }
     }
 
