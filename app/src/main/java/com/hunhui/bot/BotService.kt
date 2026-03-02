@@ -59,6 +59,7 @@ class BotService : Service() {
     private fun startVoiceInput() {
         if (isListening) return
         isListening = true
+        accumulatedText.clear() // 새 녹음 시작 시 이전 텍스트 초기화
         updateNotification("🎤 듣는 중...")
 
         speechRecognizer?.destroy()
