@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -19,7 +19,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var isListening = false
 
-    // BotService 상태 수신 리시버
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.getStringExtra(BotService.EXTRA_VOICE_STATE)) {
@@ -49,15 +48,14 @@ class MainActivity : AppCompatActivity() {
 
         requestPermissionsIfNeeded()
         startBotService()
+        setupChannelSpinner()
 
         binding.btnVoice.setOnClickListener {
             if (!isListening) {
-                // 녹음 시작
                 val i = Intent(this, BotService::class.java).apply { action = BotService.ACTION_VOICE }
                 ContextCompat.startForegroundService(this, i)
                 setListeningState(true)
             } else {
-                // 녹음 중지 (stopListening 요청)
                 val i = Intent(this, BotService::class.java).apply { action = BotService.ACTION_STOP_VOICE }
                 ContextCompat.startForegroundService(this, i)
                 setListeningState(false)
@@ -69,19 +67,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setListeningState(listening: Boolean) {
-        isListening = listening
-        if (listening) {
-            binding.btnVoice.text = "👂 듣는 중... (탭하면 중지)"
-            binding.btnVoice.alpha = 0.7f
-        } else {
-            binding.btnVoice.text = "🎤 지금 바로 음성 전송"
-            binding.btnVoice.alpha = 1.0f
+    private fun setupChannelSpinner() {
+        val channels = Prefs.getChannels(this)
+        if (channels.isEmpty()) return
+
+        val aliases = channels.map { it.alias }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, aliases).also {
+            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        binding.spinnerChannel.adapter = adapter
+        binding.spinnerChannel.setSelection(Prefs.getSelectedChannelIndex(this))
+        binding.spinnerChannel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
+                Prefs.saveSelectedChannelIndex(this@MainActivity, pos)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
     override fun onResume() {
         super.onResume()
+        setupChannelSpinner()
         val filter = IntentFilter(BotService.ACTION_VOICE_STATE_CHANGED)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(statusReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -93,6 +99,17 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         try { unregisterReceiver(statusReceiver) } catch (_: Exception) {}
+    }
+
+    private fun setListeningState(listening: Boolean) {
+        isListening = listening
+        if (listening) {
+            binding.btnVoice.text = "👂 듣는 중... (탭하면 중지)"
+            binding.btnVoice.alpha = 0.7f
+        } else {
+            binding.btnVoice.text = "🎤 지금 바로 음성 전송"
+            binding.btnVoice.alpha = 1.0f
+        }
     }
 
     private fun startBotService() {

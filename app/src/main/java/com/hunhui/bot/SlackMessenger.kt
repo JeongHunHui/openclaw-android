@@ -43,7 +43,9 @@ object SlackMessenger {
     suspend fun sendMessage(context: Context, text: String): Result<Unit> = withContext(Dispatchers.IO) {
         // 유저 토큰 우선, 없으면 봇 토큰
         val token = Prefs.getUserToken(context).ifBlank { Prefs.getBotToken(context) }
-        val channel = Prefs.getChannel(context)
+        val channels = Prefs.getChannels(context)
+        val selectedIdx = Prefs.getSelectedChannelIndex(context)
+        val channel = channels.getOrNull(selectedIdx)?.id ?: Prefs.getChannel(context)
 
         if (token.isBlank() || channel.isBlank()) {
             return@withContext Result.failure(IllegalStateException("Slack 설정이 없어"))

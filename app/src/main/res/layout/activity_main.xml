@@ -29,10 +29,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginBottom="40dp"
+        android:layout_marginBottom="20dp"
         android:text="알림바에서 바로 슬랙으로 🎤"
         android:textColor="#64748B"
         android:textSize="13sp" />
+
+    <!-- 채널 선택 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="전송 채널"
+        android:textColor="#94A3B8"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp" />
+
+    <Spinner
+        android:id="@+id/spinnerChannel"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/input_bg"
+        android:layout_marginBottom="20dp" />
 
     <!-- 음성 바로 전송 -->
     <Button
@@ -46,8 +62,6 @@
         android:textStyle="bold"
         android:layout_marginBottom="12dp" />
 
-    <!-- TODO: 추후 메뉴들 추가할 자리 -->
-
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
@@ -55,7 +69,6 @@
         android:layout_marginTop="24dp"
         android:layout_marginBottom="24dp" />
 
-    <!-- 설정 -->
     <Button
         android:id="@+id/btnSettings"
         android:layout_width="match_parent"

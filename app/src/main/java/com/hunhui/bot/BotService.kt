@@ -175,16 +175,30 @@ class BotService : Service() {
         }
     }
 
-    private fun buildNotification(status: String): Notification {
+    private fun buildNotification(status: String, listening: Boolean = isListening): Notification {
         val openApp = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Toggle: if listening → STOP, else → START
+        val voiceAction: String
+        val voiceLabel: String
+        val voiceRequestCode: Int
+        if (listening) {
+            voiceAction = ACTION_STOP_VOICE
+            voiceLabel = "🔴 중지"
+            voiceRequestCode = 11
+        } else {
+            voiceAction = ACTION_VOICE
+            voiceLabel = "🎤 음성"
+            voiceRequestCode = 1
+        }
+
         val voiceIntent = PendingIntent.getService(
-            this, 1,
-            Intent(this, BotService::class.java).apply { action = ACTION_VOICE },
+            this, voiceRequestCode,
+            Intent(this, BotService::class.java).apply { action = voiceAction },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -205,21 +219,25 @@ class BotService : Service() {
             android.R.drawable.ic_menu_edit, "✏️ 텍스트", replyIntent
         ).addRemoteInput(remoteInput).build()
 
+        val channels = Prefs.getChannels(this)
+        val selectedIdx = Prefs.getSelectedChannelIndex(this)
+        val channelAlias = channels.getOrNull(selectedIdx)?.alias ?: "채널1"
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("훈희봇")
+            .setContentTitle("훈희봇 · $channelAlias")
             .setContentText(status)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(openApp)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(android.R.drawable.ic_btn_speak_now, "🎤 음성", voiceIntent)
+            .addAction(android.R.drawable.ic_btn_speak_now, voiceLabel, voiceIntent)
             .addAction(replyAction)
             .build()
     }
 
     private fun updateNotification(status: String) {
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        nm.notify(NOTIFICATION_ID, buildNotification(status))
+        nm.notify(NOTIFICATION_ID, buildNotification(status, isListening))
     }
 
     private fun createNotificationChannel() {
