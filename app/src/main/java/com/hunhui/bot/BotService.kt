@@ -35,6 +35,7 @@ class BotService : Service() {
     private val scope = CoroutineScope(Dispatchers.Main + job)
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
+    private val accumulatedText = StringBuilder()
 
     override fun onCreate() {
         super.onCreate()
@@ -72,16 +73,38 @@ class BotService : Service() {
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = matches?.firstOrNull()
-                isListening = false
-                broadcastVoiceState("idle")
                 if (!text.isNullOrBlank()) {
-                    sendToSlack(text)
+                    accumulatedText.append(if (accumulatedText.isEmpty()) text else " $text")
+                    updateNotification("🎤 듣는 중... (${accumulatedText.length}자)")
+                }
+                // Keep listening until user presses stop
+                if (isListening) {
+                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                        kotlinx.coroutines.delay(200)
+                        if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
+                    }
                 } else {
-                    updateNotification("대기 중...")
+                    // User pressed stop — send accumulated text
+                    val finalText = accumulatedText.toString().trim()
+                    accumulatedText.clear()
+                    broadcastVoiceState("idle")
+                    if (finalText.isNotBlank()) {
+                        sendToSlack(finalText)
+                    } else {
+                        updateNotification("대기 중...")
+                    }
                 }
             }
 
             override fun onError(error: Int) {
+                val retriable = error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                if (retriable && isListening) {
+                    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                        kotlinx.coroutines.delay(200)
+                        if (isListening) speechRecognizer?.startListening(buildRecognizerIntent())
+                    }
+                    return
+                }
                 isListening = false
                 broadcastVoiceState("idle")
                 val msg = when (error) {
