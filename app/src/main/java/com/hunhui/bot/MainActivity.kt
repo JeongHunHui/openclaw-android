@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQ_PERMISSIONS = 100
-        const val WEB_URL = "https://hunhui-bot.web.app"
+        const val WEB_URL = "http://jeonghunhuiui-macmini.ts.net:3001"
     }
 
     private val statusReceiver = object : BroadcastReceiver() {
