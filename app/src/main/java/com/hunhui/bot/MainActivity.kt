@@ -1,6 +1,7 @@
 package com.hunhui.bot
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,7 +9,11 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.*
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -17,21 +22,67 @@ import com.hunhui.bot.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var isListening = false
+    private lateinit var webView: WebView
+
+    companion object {
+        private const val REQ_PERMISSIONS = 100
+        const val WEB_URL = "https://hunhui-bot-web.vercel.app"
+    }
 
     private val statusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            when (intent.getStringExtra(BotService.EXTRA_VOICE_STATE)) {
-                "listening" -> setListeningState(true)
-                "idle" -> setListeningState(false)
+            when (intent.action) {
+                BotService.ACTION_VOICE_STATE_CHANGED -> {
+                    val state = intent.getStringExtra(BotService.EXTRA_VOICE_STATE) ?: return
+                    webView.post {
+                        webView.evaluateJavascript(
+                            "window.HunhuiNativeCallback && window.HunhuiNativeCallback.onVoiceStateChanged('$state');",
+                            null
+                        )
+                    }
+                }
+                BotService.ACTION_STT_RESULT -> {
+                    val text = intent.getStringExtra(BotService.EXTRA_STT_TEXT) ?: return
+                    val escaped = text.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+                    webView.post {
+                        webView.evaluateJavascript(
+                            "window.HunhuiNativeCallback && window.HunhuiNativeCallback.onVoiceResult('$escaped');",
+                            null
+                        )
+                    }
+                }
             }
         }
     }
 
-    companion object {
-        private const val REQ_PERMISSIONS = 100
+    inner class HunhuiNativeInterface {
+        @JavascriptInterface
+        fun startVoice() {
+            val i = Intent(this@MainActivity, BotService::class.java).apply {
+                action = BotService.ACTION_VOICE
+            }
+            ContextCompat.startForegroundService(this@MainActivity, i)
+        }
+
+        @JavascriptInterface
+        fun stopVoice() {
+            val i = Intent(this@MainActivity, BotService::class.java).apply {
+                action = BotService.ACTION_STOP_VOICE
+            }
+            ContextCompat.startForegroundService(this@MainActivity, i)
+        }
+
+        @JavascriptInterface
+        fun sendMessage(text: String) {
+            val i = Intent(this@MainActivity, BotService::class.java).apply {
+                action = BotService.ACTION_SEND_TEXT
+                putExtra(BotService.EXTRA_TEXT, text)
+            }
+            ContextCompat.startForegroundService(this@MainActivity, i)
+        }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,49 +97,35 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        webView = binding.webView
+        setupWebView()
+
         requestPermissionsIfNeeded()
         startBotService()
-        setupChannelSpinner()
-
-        binding.btnVoice.setOnClickListener {
-            if (!isListening) {
-                val i = Intent(this, BotService::class.java).apply { action = BotService.ACTION_VOICE }
-                ContextCompat.startForegroundService(this, i)
-                setListeningState(true)
-            } else {
-                val i = Intent(this, BotService::class.java).apply { action = BotService.ACTION_STOP_VOICE }
-                ContextCompat.startForegroundService(this, i)
-                setListeningState(false)
-            }
-        }
-
-        binding.btnSettings.setOnClickListener {
-            startActivity(Intent(this, SetupActivity::class.java))
-        }
     }
 
-    private fun setupChannelSpinner() {
-        val channels = Prefs.getChannels(this)
-        if (channels.isEmpty()) return
-
-        val aliases = channels.map { it.alias }
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, aliases).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWebView() {
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            cacheMode = WebSettings.LOAD_DEFAULT
+            // 커스텀 User-Agent에 HunhuiBot-Android 추가
+            userAgentString = userAgentString + " HunhuiBot-Android/1.0"
         }
-        binding.spinnerChannel.adapter = adapter
-        binding.spinnerChannel.setSelection(Prefs.getSelectedChannelIndex(this))
-        binding.spinnerChannel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: android.view.View?, pos: Int, id: Long) {
-                Prefs.saveSelectedChannelIndex(this@MainActivity, pos)
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
+        webView.webViewClient = WebViewClient()
+        webView.webChromeClient = WebChromeClient()
+        webView.addJavascriptInterface(HunhuiNativeInterface(), "HunhuiNative")
+        webView.loadUrl(WEB_URL)
     }
 
     override fun onResume() {
         super.onResume()
-        setupChannelSpinner()
-        val filter = IntentFilter(BotService.ACTION_VOICE_STATE_CHANGED)
+        val filter = IntentFilter().apply {
+            addAction(BotService.ACTION_VOICE_STATE_CHANGED)
+            addAction(BotService.ACTION_STT_RESULT)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(statusReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -101,15 +138,9 @@ class MainActivity : AppCompatActivity() {
         try { unregisterReceiver(statusReceiver) } catch (_: Exception) {}
     }
 
-    private fun setListeningState(listening: Boolean) {
-        isListening = listening
-        if (listening) {
-            binding.btnVoice.text = "👂 듣는 중... (탭하면 중지)"
-            binding.btnVoice.alpha = 0.7f
-        } else {
-            binding.btnVoice.text = "🎤 지금 바로 음성 전송"
-            binding.btnVoice.alpha = 1.0f
-        }
+    override fun onBackPressed() {
+        if (webView.canGoBack()) webView.goBack()
+        else super.onBackPressed()
     }
 
     private fun startBotService() {

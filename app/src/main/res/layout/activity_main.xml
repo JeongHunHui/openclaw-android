@@ -1,81 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#0D0D1A"
-    android:padding="24dp">
+    android:background="#0f0f1a">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="32dp"
-        android:text="🔮"
-        android:textSize="52sp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="훈희봇"
-        android:textColor="#C084FC"
-        android:textSize="28sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="20dp"
-        android:text="알림바에서 바로 슬랙으로 🎤"
-        android:textColor="#64748B"
-        android:textSize="13sp" />
-
-    <!-- 채널 선택 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="전송 채널"
-        android:textColor="#94A3B8"
-        android:textSize="12sp"
-        android:layout_marginBottom="4dp" />
-
-    <Spinner
-        android:id="@+id/spinnerChannel"
+    <WebView
+        android:id="@+id/webView"
         android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:background="@drawable/input_bg"
-        android:layout_marginBottom="20dp" />
+        android:layout_height="match_parent" />
 
-    <!-- 음성 바로 전송 -->
-    <Button
-        android:id="@+id/btnVoice"
-        android:layout_width="match_parent"
-        android:layout_height="58dp"
-        android:background="@drawable/btn_primary_bg"
-        android:text="🎤 지금 바로 음성 전송"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#1E1E2E"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="24dp" />
-
-    <Button
-        android:id="@+id/btnSettings"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/btn_secondary_bg"
-        android:text="⚙️ 설정 변경"
-        android:textColor="#64748B"
-        android:textSize="14sp" />
-
-</LinearLayout>
+</FrameLayout>

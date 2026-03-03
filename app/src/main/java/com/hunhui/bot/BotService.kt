@@ -28,6 +28,8 @@ class BotService : Service() {
         const val ACTION_SEND_TEXT = "com.hunhui.bot.ACTION_SEND_TEXT"
         const val EXTRA_TEXT = "extra_text"
         const val KEY_TEXT_REPLY = "key_text_reply"
+        const val ACTION_STT_RESULT = "com.hunhui.bot.ACTION_STT_RESULT"
+        const val EXTRA_STT_TEXT = "extra_stt_text"
         private const val TAG = "BotService"
     }
 
@@ -77,6 +79,7 @@ class BotService : Service() {
                 if (!text.isNullOrBlank()) {
                     accumulatedText.append(if (accumulatedText.isEmpty()) text else " $text")
                     updateNotification("🎤 듣는 중... (${accumulatedText.length}자)")
+                    broadcastSttResult(accumulatedText.toString())
                 }
                 // Keep listening until user presses stop
                 if (isListening) {
@@ -147,6 +150,13 @@ class BotService : Service() {
     private fun broadcastVoiceState(state: String) {
         sendBroadcast(Intent(ACTION_VOICE_STATE_CHANGED).apply {
             putExtra(EXTRA_VOICE_STATE, state)
+            setPackage(packageName)
+        })
+    }
+
+    private fun broadcastSttResult(text: String) {
+        sendBroadcast(Intent(ACTION_STT_RESULT).apply {
+            putExtra(EXTRA_STT_TEXT, text)
             setPackage(packageName)
         })
     }
