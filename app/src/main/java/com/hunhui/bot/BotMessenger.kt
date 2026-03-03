@@ -17,7 +17,7 @@ object BotMessenger {
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private const val SERVER_URL = "http://100.73.43.27:3000/chat"
+    private const val SERVER_URL = "https://jeonghunhuiui-macmini.tail82ec06.ts.net:8443/chat"
     private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
 
     /** hunhui-bot-server로 메시지 전송, 클로드 응답 반환 */
