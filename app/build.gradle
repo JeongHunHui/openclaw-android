@@ -15,6 +15,12 @@ android {
         def verName = System.getenv("VERSION_NAME")
         versionCode buildNum ? buildNum.toInteger() : 1
         versionName verName ?: "1.0.0"
+
+        // 환경변수로 URL 주입 — CI에서 secrets로 제공
+        def webUrl = System.getenv("BOT_WEB_URL") ?: "http://100.73.43.27:3001"
+        def serverUrl = System.getenv("BOT_SERVER_URL") ?: "https://jeonghunhuiui-macmini.tail82ec06.ts.net:8443"
+        buildConfigField "String", "BOT_WEB_URL", "\"${webUrl}\""
+        buildConfigField "String", "BOT_SERVER_URL", "\"${serverUrl}\""
     }
 
     buildTypes {
@@ -37,6 +43,7 @@ android {
 
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 

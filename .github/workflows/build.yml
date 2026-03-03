@@ -46,6 +46,8 @@ jobs:
         env:
           BUILD_NUMBER: ${{ env.VERSION_CODE }}
           VERSION_NAME: ${{ env.VERSION_NAME }}
+          BOT_WEB_URL: ${{ secrets.BOT_WEB_URL }}
+          BOT_SERVER_URL: ${{ secrets.BOT_SERVER_URL }}
         run: |
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/app/hunhui-bot.jks \

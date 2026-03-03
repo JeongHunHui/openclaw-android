@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQ_PERMISSIONS = 100
-        const val WEB_URL = "http://100.73.43.27:3001"
+        val WEB_URL get() = BuildConfig.BOT_WEB_URL
     }
 
     private val statusReceiver = object : BroadcastReceiver() {
