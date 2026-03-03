@@ -50,7 +50,7 @@ class BotService : Service() {
             ACTION_TEXT_INPUT -> openTextInput()
             ACTION_SEND_TEXT -> {
                 val text = intent.getStringExtra(EXTRA_TEXT) ?: return START_STICKY
-                sendToSlack(text)
+                sendToBot(text)
             }
         }
         return START_STICKY
@@ -90,7 +90,7 @@ class BotService : Service() {
                     accumulatedText.clear()
                     broadcastVoiceState("idle")
                     if (finalText.isNotBlank()) {
-                        sendToSlack(finalText)
+                        sendToBot(finalText)
                     } else {
                         updateNotification("대기 중...")
                     }
@@ -158,13 +158,15 @@ class BotService : Service() {
         startActivity(intent)
     }
 
-    private fun sendToSlack(text: String) {
+    private fun sendToBot(text: String) {
         updateNotification("전송 중: $text")
         scope.launch {
-            val result = SlackMessenger.sendMessage(applicationContext, text)
+            val result = BotMessenger.sendMessage(applicationContext, text)
             if (result.isSuccess) {
-                updateNotification("✅ 전송 완료")
-                kotlinx.coroutines.delay(2000)
+                val reply = result.getOrDefault("")
+                val preview = if (reply.length > 50) reply.substring(0, 50) + "..." else reply
+                updateNotification("✅ $preview")
+                kotlinx.coroutines.delay(3000)
                 updateNotification("대기 중...")
             } else {
                 val err = result.exceptionOrNull()?.message ?: "알 수 없는 오류"
